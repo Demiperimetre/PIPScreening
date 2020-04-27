@@ -15,3 +15,5 @@ use_lifecycle_badge("experimental")
 
 
 check()
+load_all() # pour charger les fonctinos
+document() #generer les doc

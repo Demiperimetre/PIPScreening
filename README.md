@@ -1,29 +1,20 @@
----
-output: github_document
----
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-
-```{r, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>",
-  fig.path = "man/figures/README-",
-  out.width = "100%"
-)
-```
 
 # PIPScreening
 
 <!-- badges: start -->
-[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://www.tidyverse.org/lifecycle/#experimental)
+
+[![Lifecycle:
+experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://www.tidyverse.org/lifecycle/#experimental)
 <!-- badges: end -->
 
-The goal of PIPScreening is to ...
+The goal of PIPScreening is to …
 
 ## Installation
 
-You can install the released version of PIPScreening from [CRAN](https://CRAN.R-project.org) with:
+You can install the released version of PIPScreening from
+[CRAN](https://CRAN.R-project.org) with:
 
 ``` r
 install.packages("PIPScreening")
@@ -35,11 +26,12 @@ And the development version from [GitHub](https://github.com/) with:
 # install.packages("devtools")
 devtools::install_github("Demiperimetre/PIPScreening")
 ```
+
 ## Example
 
 This is a basic example which shows you how to solve a common problem:
 
-```{r example}
+``` r
 library(PIPScreening)
 ## basic example code
 ```
