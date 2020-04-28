@@ -1,5 +1,6 @@
 Package: PIPScreening
-Title: Posterior Inclusion Probabilities of Active covariates in Computer Models
+Title: Posterior Inclusion Probabilities of Active covariates in
+    Computer Models
 Version: 0.0.0.9000
 Authors@R: 
     person(given = "Pierre",
@@ -7,7 +8,8 @@ Authors@R:
            role = c("aut", "cre"),
            email = "pierre.barbillon@agroparistech.fr",
            comment = c(ORCID = "https://orcid.org/0000-0002-7766-7693"))
-Description: Compute posterior probabilities of being an active covariate in an emulator or in a discrepancy function.
+Description: Compute posterior probabilities of being an active
+    covariate in an emulator or in a discrepancy function.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
