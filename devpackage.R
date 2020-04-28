@@ -20,4 +20,13 @@ use_tidy_description()
 check()
 load_all() # pour charger les fonctinos
 document() #generer les doc
+test()
 ?sim3
+
+
+# tests
+goodpractice::goodpractice()
+use_testthat() # dosseier test
+use_test("toySimulator.R")
+
+
