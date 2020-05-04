@@ -7,8 +7,8 @@
 sim3(x, theta)
 }
 \arguments{
-\item{x}{Matrix of field design in dimension n \eqn{\times} p (with p>3). Only the 3 first rows of x are
-taken into account}
+\item{x}{Matrix of field design in dimension n \eqn{\times} p (with p>3).
+Only the 3 first rows of x are taken into account}
 
 \item{theta}{Calibration parameter of dimension 3}
 }

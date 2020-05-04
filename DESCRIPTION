@@ -11,8 +11,14 @@ Authors@R:
 Description: Compute posterior probabilities of being an active
     covariate in an emulator or in a discrepancy function.
 License: GPL-3
+Imports: 
+    Rcpp
 Suggests: 
     testthat
+LinkingTo: 
+    Rcpp,
+    RcppArmadillo,
+    Matrix
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)

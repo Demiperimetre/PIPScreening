@@ -11,7 +11,8 @@ simGal(x, theta, beta = rep(1, ncol(x)))
 
 \item{theta}{Calibration parameter of dimension 3}
 
-\item{beta}{binary vector. Same size as \code{theta} indicating with 1 which dimensions are active}
+\item{beta}{binary vector. Same size as \code{theta} indicating
+with 1 which dimensions are active}
 }
 \value{
 vector of responses corresponding to a linearized Sobol function

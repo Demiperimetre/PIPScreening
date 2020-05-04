@@ -16,21 +16,27 @@ badgecreatr::badge_codecov(ghaccount = "demiperimetre",ghrepo="PIPScreening",bra
 
 use_r("toySimulator")
 
+use_r("utilsFunctions")
+use_rcpp_armadillo("utils")
 use_tidy_description()
+use_test("utils.cpp")
+usethis::use_rcpp_armadillo()
+#use_r("PIPScreening-package")
 
 check()
 load_all() # pour charger les fonctinos
 document() #generer les doc
 test()
+
 covr::package_coverage() # test
-covr::report() # pour avoir la fonction
+covr::report() # pour avoir le rapport ### apparemment il faut relancer le load a chaque fois
 
 ?sim3
 
 
 # tests
 goodpractice::goodpractice()
-use_testthat() # dosseier test
-use_test("toySimulator.R")
+#use_testthat() # dosseier test
+#use_test("toySimulator.R")
 
-
+Rcpp::compileAttributes()
