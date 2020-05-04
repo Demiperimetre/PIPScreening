@@ -11,7 +11,8 @@ use_git()
 use_readme_rmd() # creer la description
 
 use_lifecycle_badge("experimental")
-
+badgecreatr::badge_license()
+badgecreatr::badge_codecov(ghaccount = "demiperimetre",ghrepo="PIPScreening",branch="master")
 
 use_r("toySimulator")
 
@@ -21,6 +22,9 @@ check()
 load_all() # pour charger les fonctinos
 document() #generer les doc
 test()
+covr::package_coverage() # test
+covr::report() # pour avoir la fonction
+
 ?sim3
 
 
