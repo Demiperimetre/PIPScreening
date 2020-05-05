@@ -10,10 +10,23 @@ MetropoliswGibbs <- function(niter, parwalk, parinit, Rexp, tdensD, alpha, parpr
     .Call(`_PIPScreening_MetropoliswGibbs`, niter, parwalk, parinit, Rexp, tdensD, alpha, parprior, adaptive, calibration)
 }
 
+#' Metropolis classic sampler with given covariance for RW
+#'
+#' @param niter number of iterations
+#' @param covwalk covariance matrix for random walk
+#' @return Posterior sample in the transformed space
+#' @export
 Metropolis <- function(niter, covwalk, parinit, Rexp, tdensD, alpha, parprior, adaptive, calibration) {
     .Call(`_PIPScreening_Metropolis`, niter, covwalk, parinit, Rexp, tdensD, alpha, parprior, adaptive, calibration)
 }
 
+#' Metropolis sampler after a Metropolis within Gibbs Sampler
+#'
+#' @param niterMwG number of iterations for the Metropolis within Gibbs
+#' @param niterMH number of iterations for the Metropolis
+#' @return Posterior sample in the transformed space
+#' @details The MwG sampler is used to estimate a covariance matrix for the random walk in the upcoming Metropolis sampler.
+#' @export
 MCMC <- function(niterMwG, niterMH, parwalk, parinit, Rexp, tdensD, alpha, parprior, adaptive, calibration) {
     .Call(`_PIPScreening_MCMC`, niterMwG, niterMH, parwalk, parinit, Rexp, tdensD, alpha, parprior, adaptive, calibration)
 }

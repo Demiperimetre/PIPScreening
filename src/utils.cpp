@@ -282,7 +282,12 @@ Rcpp::List MetropoliswGibbs(int niter,arma::vec parwalk,arma::vec parinit,arma::
 }
 
 
-//MH classique avec matrice de cov a estimer prealablement ?
+//' Metropolis classic sampler with given covariance for RW
+//'
+//' @param niter number of iterations
+//' @param covwalk covariance matrix for random walk
+//' @return Posterior sample in the transformed space
+//' @export
 // [[Rcpp::export]]
 Rcpp::List Metropolis(int niter,arma::mat covwalk,arma::vec parinit,arma::vec Rexp,Rcpp::List tdensD,double alpha,arma::mat parprior,bool adaptive,Rcpp::List calibration)
 {
@@ -380,7 +385,13 @@ Rcpp::List Metropolis(int niter,arma::mat covwalk,arma::vec parinit,arma::vec Re
 }
 
 
-// gal mcmc
+//' Metropolis sampler after a Metropolis within Gibbs Sampler
+//'
+//' @param niterMwG number of iterations for the Metropolis within Gibbs
+//' @param niterMH number of iterations for the Metropolis
+//' @return Posterior sample in the transformed space
+//' @details The MwG sampler is used to estimate a covariance matrix for the random walk in the upcoming Metropolis sampler.
+//' @export
 // [[Rcpp::export]]
 Rcpp::List MCMC(int niterMwG,int niterMH,arma::vec parwalk,arma::vec parinit,arma::vec Rexp,Rcpp::List tdensD,double alpha,arma::mat parprior,bool adaptive,Rcpp::List calibration)
 {
