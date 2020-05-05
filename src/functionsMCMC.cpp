@@ -1,7 +1,7 @@
-#include <RcppArmadillo.h>
 // [[Rcpp::depends(Matrix,RcppArmadillo)]]
+#include <RcppArmadillo.h>
 #include <math.h>
-#include <armadillo>
+//#include <armadillo>
 
 
 //using namespace std;

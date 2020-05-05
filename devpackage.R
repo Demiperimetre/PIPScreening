@@ -29,7 +29,10 @@ document() #generer les doc
 test() # bug si on ne refait pas un buil ?
 
 covr::package_coverage() # test
-covr::report() # pour avoir le rapport ### apparemment il faut relancer le load a chaque fois
+covr::report() # pour avoir le rapport
+
+
+#### plantage tres bizarre sur les tests... Recomplier le src ? virer l'environnement ???
 
 ?sim3
 
