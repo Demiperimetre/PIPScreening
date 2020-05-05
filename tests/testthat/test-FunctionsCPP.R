@@ -1,5 +1,6 @@
 test_that("MCMC chains", {
   # test comme scenarii papier
+  set.seed(1)
   N=50
   beta=c(1,0,1,0,0)
   theta=4:8/10
@@ -33,4 +34,14 @@ test_that("MCMC chains", {
   resmcmc <- (MCMC(nMWG,nMet,parwalkinit,init,Rexp,tdistFULL,1.9,parprior,TRUE,calibration1))
   expect_length(resmcmc$MH$chain[,1],nMet)
   expect_length(resmcmc$MH$chain[1,],pgamma+2)
+
+  ptheta <- 3
+  parwalkinit2 <- c(rep(.1,pgamma),.1,.1,rep(.1,ptheta))
+  init2 <- c(rep(0,pgamma),.004,.2,rep(.5,ptheta))
+  resmcmccal <- MCMC(nMWG,nMet,parwalkinit2,init2,Rexp,tdistFULL,1.9,parprior,TRUE,calibration2)
+  resmcmccal$MH$chain[1,]
+  expect_length(resmcmccal$MH$chain[,1],nMet)
+  expect_length(resmcmccal$MH$chain[1,],pgamma+2+ptheta)
+
+
 })

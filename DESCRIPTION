@@ -14,11 +14,15 @@ License: GPL-3
 Imports: 
     Rcpp
 Suggests: 
+    knitr,
+    rmarkdown,
     testthat
 LinkingTo: 
+    Matrix,
     Rcpp,
-    RcppArmadillo,
-    Matrix
+    RcppArmadillo
+VignetteBuilder: 
+    knitr
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)

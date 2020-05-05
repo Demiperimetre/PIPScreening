@@ -26,13 +26,15 @@ usethis::use_rcpp_armadillo()
 check()
 load_all() # pour charger les fonctinos
 document() #generer les doc
-test()
+test() # bug si on ne refait pas un buil ?
 
 covr::package_coverage() # test
 covr::report() # pour avoir le rapport ### apparemment il faut relancer le load a chaque fois
 
 ?sim3
 
+
+usethis::use_vignette("ExampleScenario")
 
 # tests
 goodpractice::goodpractice()

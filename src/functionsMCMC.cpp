@@ -4,9 +4,9 @@
 #include <armadillo>
 
 
-using namespace std;
+//using namespace std;
 using namespace arma;
-using namespace Rcpp;
+//using namespace Rcpp;
 
 
 
@@ -179,9 +179,7 @@ double logposteriorscalcpp(arma::vec parameters,arma::mat Rexp,Rcpp::List tdensD
 }
 
 
-// Metropolis within gibss,
-//burnin a enlever a posterior
-// les paramètres sont dans l'espace transformés
+
 //' Metropolis within Gibbs Sampler
 //'
 //' @param niter number of iterations
