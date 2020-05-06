@@ -1,4 +1,4 @@
-test_that("MCMC chains", {
+test_that("MCMC chains work", {
   # test comme scenarii papier
   set.seed(1)
   N=50
@@ -42,6 +42,4 @@ test_that("MCMC chains", {
   resmcmccal$MH$chain[1,]
   expect_length(resmcmccal$MH$chain[,1],nMet)
   expect_length(resmcmccal$MH$chain[1,],pgamma+2+ptheta)
-
-
 })
