@@ -183,6 +183,17 @@ double logposteriorscalcpp(arma::vec parameters,arma::mat Rexp,Rcpp::List tdensD
 //' Metropolis within Gibbs Sampler
 //'
 //' @param niter number of iterations
+//' @param parwalk vector of variances for the random walk
+//' @param parinit vector of initial parameters rhos, variance of the observation noise,
+//' variance of the discrepancy and (if calibration) thetas
+//' @param Rexp residual of field data vs simulator
+//' @param tdensD output of the function tensordist
+//' @param alpha power in the exponential kernel
+//' @param parprior prior parameters for the parameters
+//' @param adaptive boolean to adapt the random walk
+//' @param calibration list of needed field if a calibration is to be
+//'  performed in this order 1) computer model, 2) field observation, 3) field variable, 4) boolean indicating whether calibration
+//'  is to be performed or not.
 //' @return Posterior sample in the transformed space
 //' @export
 // [[Rcpp::export]]
@@ -284,6 +295,16 @@ Rcpp::List MetropoliswGibbs(int niter,arma::vec parwalk,arma::vec parinit,arma::
 //'
 //' @param niter number of iterations
 //' @param covwalk covariance matrix for random walk
+//' @param parinit vector of initial parameters rhos, variance of the observation noise,
+//' variance of the discrepancy and (if calibration) thetas
+//' @param Rexp residual of field data vs simulator
+//' @param tdensD output of the function tensordist
+//' @param alpha power in the exponential kernel
+//' @param parprior prior parameters for the parameters
+//' @param adaptive boolean to adapt the random walk
+//' @param calibration list of needed field if a calibration is to be
+//'  performed in this order 1) computer model, 2) field observation, 3) field variable, 4) boolean indicating whether calibration
+//'  is to be performed or not.
 //' @return Posterior sample in the transformed space
 //' @export
 // [[Rcpp::export]]
@@ -385,8 +406,20 @@ Rcpp::List Metropolis(int niter,arma::mat covwalk,arma::vec parinit,arma::vec Re
 
 //' Metropolis sampler after a Metropolis within Gibbs Sampler
 //'
-//' @param niterMwG number of iterations for the Metropolis within Gibbs
-//' @param niterMH number of iterations for the Metropolis
+//' @param niterMwG number of iterations of the Metropolis withing Gibbss algorithm mainly used to
+//'  infer a covariance matrix for the random walk in the upcoming MH algorithm
+//' @param niterMH number of iterations of the Metropolis Hastings algorithm
+//' @param parwalk vector of variances for the random walk
+//' @param parinit vector of initial parameters rhos, variance of the observation noise,
+//' variance of the discrepancy and (if calibration) thetas
+//' @param Rexp residual of field data vs simulator
+//' @param tdensD output of the function tensordist
+//' @param alpha power in the exponential kernel
+//' @param parprior prior parameters for the parameters
+//' @param adaptive boolean to adapt the random walk
+//' @param calibration list of needed field if a calibration is to be
+//'  performed in this order 1) computer model, 2) field observation, 3) field variable, 4) boolean indicating whether calibration
+//'  is to be performed or not.
 //' @return Posterior sample in the transformed space
 //' @details The MwG sampler is used to estimate a covariance matrix for the random walk in the upcoming Metropolis sampler.
 //' @export

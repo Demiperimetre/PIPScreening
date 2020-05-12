@@ -18,6 +18,25 @@ MetropoliswGibbs(
 }
 \arguments{
 \item{niter}{number of iterations}
+
+\item{parwalk}{vector of variances for the random walk}
+
+\item{parinit}{vector of initial parameters rhos, variance of the observation noise,
+variance of the discrepancy and (if calibration) thetas}
+
+\item{Rexp}{residual of field data vs simulator}
+
+\item{tdensD}{output of the function tensordist}
+
+\item{alpha}{power in the exponential kernel}
+
+\item{parprior}{prior parameters for the parameters}
+
+\item{adaptive}{boolean to adapt the random walk}
+
+\item{calibration}{list of needed field if a calibration is to be
+performed in this order 1) computer model, 2) field observation, 3) field variable, 4) boolean indicating whether calibration
+is to be performed or not.}
 }
 \value{
 Posterior sample in the transformed space
