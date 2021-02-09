@@ -29,9 +29,9 @@ test_that("MCMC chains work", {
   a <- TRUE
   cpt <- 0
   parprior <- rbind(matrix(1,nrow=pgamma,ncol=2),c(4,.02),c(3,1))
-  nMWG <- 200
-  nMet <- 200
-  resmcmc <- (MCMC(nMWG,nMet,parwalkinit,init,Rexp,tdistFULL,1.9,parprior,TRUE,calibration1))
+  nMWG <- 1000
+  nMet <- 1000
+  resmcmc <- MCMC(nMWG,nMet,parwalkinit,init,Rexp,tdistFULL,1.9,parprior,TRUE,calibration1)
   expect_length(resmcmc$MH$chain[,1],nMet)
   expect_length(resmcmc$MH$chain[1,],pgamma+2)
 

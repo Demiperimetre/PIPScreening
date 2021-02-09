@@ -1,5 +1,5 @@
 ---
-title: "Example Scenario"
+title: "ExampleScenario"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{ExampleScenario}
@@ -84,8 +84,8 @@ init  <-  c(rep(0,pgamma),.004,.2)
 a <- TRUE
 cpt <- 0
 parprior <- rbind(matrix(1,nrow=pgamma,ncol=2),c(4,.02),c(3,1))
-nMWG <- 200
-nMet <- 200
+nMWG <- 2000
+nMet <- 2000
 resmcmc <- (MCMC(nMWG,nMet,parwalkinit,init,Rexp,tdistFULL,1.9,parprior,TRUE,calibration1))
 ptheta <- 3
 ```
