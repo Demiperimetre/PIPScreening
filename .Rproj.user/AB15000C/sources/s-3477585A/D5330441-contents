@@ -1,0 +1,347 @@
+chemingal="/projet/extern/save/pbarbillon/VarSelDisc/"
+
+setwd(chemingal)
+
+library(mvtnorm)
+library(parallel)
+library(mcmc)
+library(MCMCpack)
+library(DiceDesign)
+library(Rcpp)
+library(RcppArmadillo)
+source("Functions.R")
+Rcpp::sourceCpp("functions.cpp")
+
+
+
+# nb of simu
+Imax = 100
+
+#dim 
+ptheta = 3
+pgamma = 5
+
+# MCMC control
+nMWG = 5000
+nMet = 10000
+burnin = 2000
+
+# nb cores
+ncores = 16
+
+# design en gamma et en theta
+nvar = pgamma
+
+
+
+# Design for bayes factor
+Vvalmax = c(200,500)
+
+
+
+
+#Sc12 reality $1+x_1^2+x_4$ (x_2 is in the model but not in reality and x_1 is wrongly modeled)
+REStout = mclapply(1:Imax,function(numsim)
+{
+  
+  ressim <-realitysobol(N=100, beta=c(1,0,1,0,0),theta=4:8/10,sd=0.05,non.linear = c(2,1,1,1,1))
+  
+  calibration1=list(computermodel=gsobol3,Yexp=ressim$Yexp,Xexp=ressim$Xexp,FALSE)
+  
+  calibration2=list(computermodel=gsobol3,Yexp=ressim$Yexp,Xexp=ressim$Xexp,TRUE)
+  
+  Rexp = ressim$Rexp
+  
+  tdistFULL =  tensordist(ressim$Xexpnorm)
+  
+  
+  
+  # option 1 thetastar known
+  parwalkinit = c(rep(.1,pgamma),.1,.1)
+  init = c(rep(0,pgamma),.004,.2)
+  a=TRUE
+  cpt=0
+  parprior = rbind(matrix(1,nrow=pgamma,ncol=2),c(4,.02),c(3,1))
+  while (a)
+  {
+    resmcmc=try(MCMC(nMWG,nMet,parwalkinit,init,Rexp,tdistFULL,1.9,parprior,TRUE,calibration1))
+    cpt=cpt+1
+    if (class(resmcmc)!="try-error" | cpt>10  )  a=FALSE   
+  }        
+  if (a==FALSE & cpt <=10 ) covwalkdefaut = resmcmc$MH$parwalk
+  else 
+  {   resmcmc=MetropoliswGibbs(nMWG,parwalkinit,init,Rexp,tdistFULL,1.9,parprior,TRUE,calibration1)
+  covwalkdefaut = diag(as.vector(resmcmc$parwalk))    
+  sortieMCMC = Metropolis(nMet,covwalkdefaut,init,Rexp,tdistFULL,1.9,parprior,TRUE,calibration1)
+  resmcmc = list()
+  resmcmc$MH = sortieMCMC
+  }
+  
+  res1 = resmcmc
+  ech = res1$MH$chain[-(1:burnin),]
+  
+  BFsanscalib = matrix(NA,length(Vvalmax),2^pgamma)
+  for (i in 1:length(Vvalmax))
+  {
+    valmax = Vvalmax[i]
+    GAMMA = expand.grid(c(1,valmax),c(1,valmax),c(1,valmax),c(1,valmax),c(1,valmax))
+    BFsanscalib[i,] = sapply(1:nrow(GAMMA),function(k) {
+      BFbridge(ech,gamma = as.numeric(GAMMA[k,]))})   
+  }
+  
+  
+  print("avant calib")
+  
+  # option 3 calibration
+  parwalkinit = c(rep(.1,pgamma),.1,.1,rep(.1,ptheta))
+  init = c(rep(0,pgamma),.004,.2,rep(.5,ptheta))
+  a=TRUE
+  cpt=0
+  parprior = rbind(matrix(1,nrow=pgamma,ncol=2),c(4,.02),c(3,1))
+  while (a)
+  {
+    resmcmccal=try(MCMC(nMWG,nMet,parwalkinit,init,Rexp,tdistFULL,1.9,parprior,TRUE,calibration2))
+    cpt=cpt+1
+    if (class(resmcmccal)!="try-error" | cpt>10  )  a=FALSE   
+  }        
+  if (a==FALSE & cpt <=10 ) covwalkdefaut = resmcmccal$MH$parwalk ### corrected error if a=FALSE because cpt>10
+  else 
+  {   resmcmccal=MetropoliswGibbs(nMWG,parwalkinit,init,Rexp,tdistFULL,1.9,parprior,TRUE,calibration2)
+  covwalkdefaut = diag(as.vector(resmcmccal$parwalk))     
+  sortieMCMC = Metropolis(nMet,covwalkdefaut,init,Rexp,tdistFULL,1.9,parprior,TRUE,calibration2)
+  resmcmc = list()
+  resmcmc$MH = sortieMCMC
+  }
+  
+  res3 = resmcmccal
+  ech = res3$MH$chain[-(1:burnin),]
+  
+  
+  BFaveccalib = matrix(NA,length(Vvalmax),2^pgamma)
+  for (i in 1:length(Vvalmax))
+  {
+    valmax = Vvalmax[i]
+    GAMMA = expand.grid(c(1,valmax),c(1,valmax),c(1,valmax),c(1,valmax),c(1,valmax))
+    BFaveccalib[i,] = sapply(1:nrow(GAMMA),function(k) {
+      BFbridge(ech,gamma = as.numeric(GAMMA[k,]))})   
+  }
+  
+  
+  return(list(sim=ressim,mcmcnoncal = res1,mcmccal = res3,BFnoncal = BFsanscalib,BFcal = BFaveccalib))
+  
+  
+  
+  
+},mc.cores = ncores)
+
+
+name = paste(chemingal,"scenarioc12sobol.RData",sep="")
+save.image(file=name) 
+
+
+
+
+
+#Sc13 reality $1+x_1^2+x_2+x_3+x_4$ (x_3 is in reality but not in the model and x_1 is wrongly modeled)
+REStout = mclapply(1:Imax,function(numsim)
+{
+
+  
+  ressim <-realitysobol(N=100, beta=c(1,1,1,1,0),theta=4:8/10,sd=0.05,non.linear = c(2,1,1,1,1))
+  
+  calibration1=list(computermodel=gsobol3,Yexp=ressim$Yexp,Xexp=ressim$Xexp,FALSE)
+  
+  calibration2=list(computermodel=gsobol3,Yexp=ressim$Yexp,Xexp=ressim$Xexp,TRUE)
+  
+  
+  Rexp = ressim$Rexp
+  
+  tdistFULL =  tensordist(ressim$Xexpnorm)
+  
+  
+  
+  # option 1 thetastar known
+  parwalkinit = c(rep(.1,pgamma),.1,.1)
+  init = c(rep(0,pgamma),.004,.2)
+  a=TRUE
+  cpt=0
+  parprior = rbind(matrix(1,nrow=pgamma,ncol=2),c(4,.02),c(3,1))
+  while (a)
+  {
+    resmcmc=try(MCMC(nMWG,nMet,parwalkinit,init,Rexp,tdistFULL,1.9,parprior,TRUE,calibration1))
+    cpt=cpt+1
+    if (class(resmcmc)!="try-error" | cpt>10  )  a=FALSE   
+  }        
+  if (a==FALSE & cpt <=10 ) covwalkdefaut = resmcmc$MH$parwalk
+  else 
+  {   resmcmc=MetropoliswGibbs(nMWG,parwalkinit,init,Rexp,tdistFULL,1.9,parprior,TRUE,calibration1)
+  covwalkdefaut = diag(as.vector(resmcmc$parwalk))    
+  sortieMCMC = Metropolis(nMet,covwalkdefaut,init,Rexp,tdistFULL,1.9,parprior,TRUE,calibration1)
+  resmcmc = list()
+  resmcmc$MH = sortieMCMC
+  }
+  
+  res1 = resmcmc
+  ech = res1$MH$chain[-(1:burnin),]
+  
+  BFsanscalib = matrix(NA,length(Vvalmax),2^pgamma)
+  for (i in 1:length(Vvalmax))
+  {
+    valmax = Vvalmax[i]
+    GAMMA = expand.grid(c(1,valmax),c(1,valmax),c(1,valmax),c(1,valmax),c(1,valmax))
+    BFsanscalib[i,] = sapply(1:nrow(GAMMA),function(k) {
+      BFbridge(ech,gamma = as.numeric(GAMMA[k,]))})   
+  }
+  
+  
+  print("avant calib")
+  
+  # option 3 calibration
+  parwalkinit = c(rep(.1,pgamma),.1,.1,rep(.1,ptheta))
+  init = c(rep(0,pgamma),.004,.2,rep(.5,ptheta))
+  a=TRUE
+  cpt=0
+  parprior = rbind(matrix(1,nrow=pgamma,ncol=2),c(4,.02),c(3,1))
+  while (a)
+  {
+    resmcmccal=try(MCMC(nMWG,nMet,parwalkinit,init,Rexp,tdistFULL,1.9,parprior,TRUE,calibration2))
+    cpt=cpt+1
+    if (class(resmcmccal)!="try-error" | cpt>10  )  a=FALSE   
+  }        
+  if (a==FALSE & cpt <=10 ) covwalkdefaut = resmcmccal$MH$parwalk ### corrected error if a=FALSE because cpt>10
+  else 
+  {   resmcmccal=MetropoliswGibbs(nMWG,parwalkinit,init,Rexp,tdistFULL,1.9,parprior,TRUE,calibration2)
+  covwalkdefaut = diag(as.vector(resmcmccal$parwalk))     
+  sortieMCMC = Metropolis(nMet,covwalkdefaut,init,Rexp,tdistFULL,1.9,parprior,TRUE,calibration2)
+  resmcmc = list()
+  resmcmc$MH = sortieMCMC
+  }
+  
+  res3 = resmcmccal
+  ech = res3$MH$chain[-(1:burnin),]
+  
+  
+  BFaveccalib = matrix(NA,length(Vvalmax),2^pgamma)
+  for (i in 1:length(Vvalmax))
+  {
+    valmax = Vvalmax[i]
+    GAMMA = expand.grid(c(1,valmax),c(1,valmax),c(1,valmax),c(1,valmax),c(1,valmax))
+    BFaveccalib[i,] = sapply(1:nrow(GAMMA),function(k) {
+      BFbridge(ech,gamma = as.numeric(GAMMA[k,]))})   
+  }
+  
+  
+  return(list(sim=ressim,mcmcnoncal = res1,mcmccal = res3,BFnoncal = BFsanscalib,BFcal = BFaveccalib))
+  
+  
+  
+  
+},mc.cores = ncores)
+
+
+name = paste(chemingal,"scenarioc13sobol.RData",sep="")
+save.image(file=name) 
+
+
+
+#Sc14 reality $1+x_1^2+x_2+x_5$ (x_1 is wrongly modeled and instead of x_4, reality uses x_5)
+REStout = mclapply(1:Imax,function(numsim)
+{
+  
+  ressim <-realitysobol(N=100, beta=c(1,1,0,0,1),theta=c(4,5,6,7,6)/10,sd=0.05,non.linear = c(2,1,1,1,1))
+  
+  calibration1=list(computermodel=gsobol3,Yexp=ressim$Yexp,Xexp=ressim$Xexp,FALSE)
+  
+  calibration2=list(computermodel=gsobol3,Yexp=ressim$Yexp,Xexp=ressim$Xexp,TRUE)
+  
+  
+  Rexp = ressim$Rexp
+  
+  tdistFULL =  tensordist(ressim$Xexpnorm)
+  
+  
+  
+  # option 1 thetastar known
+  parwalkinit = c(rep(.1,pgamma),.1,.1)
+  init = c(rep(0,pgamma),.004,.2)
+  a=TRUE
+  cpt=0
+  parprior = rbind(matrix(1,nrow=pgamma,ncol=2),c(4,.02),c(3,1))
+  while (a)
+  {
+    resmcmc=try(MCMC(nMWG,nMet,parwalkinit,init,Rexp,tdistFULL,1.9,parprior,TRUE,calibration1))
+    cpt=cpt+1
+    if (class(resmcmc)!="try-error" | cpt>10  )  a=FALSE   
+  }        
+  if (a==FALSE & cpt <=10 ) covwalkdefaut = resmcmc$MH$parwalk
+  else 
+  {   resmcmc=MetropoliswGibbs(nMWG,parwalkinit,init,Rexp,tdistFULL,1.9,parprior,TRUE,calibration1)
+  covwalkdefaut = diag(as.vector(resmcmc$parwalk))    
+  sortieMCMC = Metropolis(nMet,covwalkdefaut,init,Rexp,tdistFULL,1.9,parprior,TRUE,calibration1)
+  resmcmc = list()
+  resmcmc$MH = sortieMCMC
+  }
+  
+  res1 = resmcmc
+  ech = res1$MH$chain[-(1:burnin),]
+  
+  BFsanscalib = matrix(NA,length(Vvalmax),2^pgamma)
+  for (i in 1:length(Vvalmax))
+  {
+    valmax = Vvalmax[i]
+    GAMMA = expand.grid(c(1,valmax),c(1,valmax),c(1,valmax),c(1,valmax),c(1,valmax))
+    BFsanscalib[i,] = sapply(1:nrow(GAMMA),function(k) {
+      BFbridge(ech,gamma = as.numeric(GAMMA[k,]))})   
+  }
+  
+  
+  print("avant calib")
+  
+  # option 3 calibration
+  parwalkinit = c(rep(.1,pgamma),.1,.1,rep(.1,ptheta))
+  init = c(rep(0,pgamma),.004,.2,rep(.5,ptheta))
+  a=TRUE
+  cpt=0
+  parprior = rbind(matrix(1,nrow=pgamma,ncol=2),c(4,.02),c(3,1))
+  while (a)
+  {
+    resmcmccal=try(MCMC(nMWG,nMet,parwalkinit,init,Rexp,tdistFULL,1.9,parprior,TRUE,calibration2))
+    cpt=cpt+1
+    if (class(resmcmccal)!="try-error" | cpt>10  )  a=FALSE   
+  }        
+  if (a==FALSE & cpt <=10 ) covwalkdefaut = resmcmccal$MH$parwalk ### corrected error if a=FALSE because cpt>10
+  else 
+  {   resmcmccal=MetropoliswGibbs(nMWG,parwalkinit,init,Rexp,tdistFULL,1.9,parprior,TRUE,calibration2)
+  covwalkdefaut = diag(as.vector(resmcmccal$parwalk))     
+  sortieMCMC = Metropolis(nMet,covwalkdefaut,init,Rexp,tdistFULL,1.9,parprior,TRUE,calibration2)
+  resmcmc = list()
+  resmcmc$MH = sortieMCMC
+  }
+  
+  res3 = resmcmccal
+  ech = res3$MH$chain[-(1:burnin),]
+  
+  
+  BFaveccalib = matrix(NA,length(Vvalmax),2^pgamma)
+  for (i in 1:length(Vvalmax))
+  {
+    valmax = Vvalmax[i]
+    GAMMA = expand.grid(c(1,valmax),c(1,valmax),c(1,valmax),c(1,valmax),c(1,valmax))
+    BFaveccalib[i,] = sapply(1:nrow(GAMMA),function(k) {
+      BFbridge(ech,gamma = as.numeric(GAMMA[k,]))})   
+  }
+  
+  
+  return(list(sim=ressim,mcmcnoncal = res1,mcmccal = res3,BFnoncal = BFsanscalib,BFcal = BFaveccalib))
+  
+  
+  
+  
+},mc.cores = ncores)
+
+
+name = paste(chemingal,"scenarioc14sobol.RData",sep="")
+save.image(file=name) 
+
+
+

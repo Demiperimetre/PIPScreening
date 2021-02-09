@@ -1,0 +1,17 @@
+
+Dans simu Scenarii Anabel
+
+gsobol3 était le simulateur sur 3 premieres variables -> simSobolLin attention on prend les premieres valeurs de x dans le simulateur
+gsobol4real etait la fonction simulant les données réelles
+
+
+Pour gérer les cas ou il y a plus de variables dans le simulateur que dans la discrepance on met les variables du simulateur en premier dans gsobol3 mais tout dépend du simulateur
+Tout simulateur doit gerer le fait qu'il peut y avoir des variables non prises en compte
+
+
+RENOMMER MCMC etc ajouter une surcouche R pour calculer tensordist et des valeurs initiales ??? pour simplifier usage. Changer les noms
+
+
+
+
+

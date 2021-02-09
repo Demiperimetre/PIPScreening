@@ -1,0 +1,24 @@
+{
+    "id": "F43CDE2B",
+    "path": "~/Documents/depotgit/PIPScreening package/PIPScreening/tests/testthat/test-FunctionsCPP.R",
+    "project_path": "tests/testthat/test-FunctionsCPP.R",
+    "type": "r_source",
+    "hash": "410277104",
+    "contents": "",
+    "dirty": false,
+    "created": 1588703950339.0,
+    "source_on_save": false,
+    "relative_order": 11,
+    "properties": {
+        "cursorPosition": "32,12",
+        "scrollLine": "18"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1612882915,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1612882915996,
+    "read_only": false,
+    "read_only_alternatives": []
+}

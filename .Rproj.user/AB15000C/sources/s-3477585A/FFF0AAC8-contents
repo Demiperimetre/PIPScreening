@@ -1,0 +1,698 @@
+
+# correlation function -----------------------------------------------------
+ # with parametrization similar to linkletter and higdon
+
+# list of distance by coordinates
+tensordist = function(X1)
+{
+  lapply(1:ncol(X1), function(i) as.matrix(dist(X1[,i],"manhattan")))
+}
+
+# dont cor Link, rho parameter, alpha reg en puissance, tensD list de mat dist par coordonnees
+corfunct = function(rho,alpha=2,tensD,cortype="Linkletter")
+{
+  res=lapply(1:length(tensD),function(i){
+    if (cortype=="Linkletter") {return(rho[i]^((2 *  as.matrix(tensD[[i]]))^alpha))} 
+    if (cortype=="expg") {return(exp(-rho[i] *  as.matrix(tensD[[i]])^alpha))}
+    })
+  return(Reduce("*",res))
+}
+
+#X1=Xexp
+#test=tensordist(X1)
+#res = corLink(1:3/10,2,test)
+
+
+
+# priors ------------------------------------------------------------------
+# Dirac mass on 0 for expg parametrization, on 1 for Linkletter parametrization
+sslab = function(gamma,rho)
+{
+  if (sum(rho>1)+sum(rho<0)>0) return(0)
+  return(gamma * (rho==1) + (1-gamma))
+}
+  
+
+sslab2 = function(gamma,rho)
+{
+  if (sum(rho>1)+sum(rho<0)>0) return(0)
+  a = rho>=gamma
+  
+  return(.5 * a*1/(1-gamma)  + .5)
+}
+
+sslab3 = function(gamma,rho)
+{
+  if (sum(rho>1)+sum(rho<0)>0) return(0)
+  return(dbeta(rho,gamma,rep(1,length(rho))))
+}
+
+# likelihood --------------------------------------------------------------
+
+loglik = function(rho,sigerr,sigdelta,Rexp,tdistFULL,alpha)
+{
+  n = nrow(as.matrix(tdistFULL[[1]])) #because tdistFULL is a dist object
+  Matvar = sigerr * diag(n) + sigdelta * corfunct(rho,alpha,tdistFULL)
+  return(-1/2*log(det(Matvar)) - 1/2 * t(Rexp) %*% solve(Matvar,Rexp))
+}
+
+
+# posterior ---------------------------------------------------------------
+
+posterior = function(parameters,Rexp,tdistFULL,alpha,par.prior,transfo.scale=FALSE,weight=FALSE,calibration=NULL)
+  # put a log and or logistic for sigs and rhos ? with option transfo.scale
+  # weight for IS outputs are likelihoods and weights 
+  # calibration contains in a list what is necessayr for performing at the same time calibration, computermodel, Xexp, Yexp,
+  # in that case, last dim of parameters are thetas
+{
+  #browser()
+  d = length(par.prior$gamma)
+  
+  if (transfo.scale==FALSE){
+    rho = parameters[1:d]
+    sigerr = parameters[d+1]
+    sigdelta = parameters[d+2]
+  } else {
+    rho = 1/(1+exp(-parameters[1:d]))
+    sigerr = exp(parameters[d+1])
+    sigdelta = exp(parameters[d+2])
+  }
+  
+  priortheta = 1
+  
+  if (!is.null(calibration))
+  {
+    theta = 1/(1+exp(-parameters[-(1:(d+2))]))
+    priortheta = (sum(theta<0) + sum(theta>1) == 0)*1
+   #browser()
+    Rexp = calibration$Yexp - calibration$computermodel(calibration$Xexp,theta)
+  }
+ 
+  
+  #avec invgamma
+  logprior = sum(log(sslab3(par.prior$gamma,rho))) + log(dinvgamma(sigerr,par.prior$sigerr[1],par.prior$sigerr[2])) + log(dinvgamma(sigdelta,par.prior$sigdelta[1],par.prior$sigdelta[2]))+log(priortheta)
+  if (weight==TRUE)
+  {
+    if (logprior==-Inf) return(c(logprior,-Inf))
+    else {
+      return(c(logprior,loglik(rho,sigerr,sigdelta,Rexp,tdistFULL,alpha))) }
+  } else {
+    if (logprior==-Inf) return(-Inf)
+    return(loglik(rho,sigerr,sigdelta,Rexp,tdistFULL,alpha) + logprior )
+  }
+}
+
+
+function.transfo.scale = function(Mparameters,dx=NULL,dtheta=NULL)
+#M parameters in the order rho, sigerr, sigdelta in row
+{
+  Mparameters2 = Mparameters
+  
+  d = ifelse(is.null(dx), ncol(Mparameters)-2,dx)
+  
+  for (j in 1:d)
+  Mparameters2[,j] =  1/(1+exp(-Mparameters[,j]))
+  
+  Mparameters2[,d+1] = exp(Mparameters[,d+1])
+  Mparameters2[,d+2] = exp(Mparameters[,d+2])
+  
+  if (!is.null(dtheta))
+  {
+    for (j in 1:dtheta)
+      Mparameters2[,d+2+j] =  1/(1+exp(-Mparameters[,d+2+j]))
+  }
+  
+  
+  return(Mparameters2)
+}
+
+
+function.transfo.scale2 = function(Mparameters,dx=NULL,dtheta=NULL)
+  #M parameters in the order rho, sigerr, sigdelta in row
+{
+  Mparameters2 = Mparameters
+  
+  d = ifelse(is.null(dx), ncol(Mparameters)-2,dx)
+  
+  for (j in 1:d)
+    Mparameters2[,j] =  1/(1+exp(-Mparameters[,j]))
+  
+  Mparameters2[,d+1] = exp(Mparameters[,d+1])
+  Mparameters2[,d+2] = exp(Mparameters[,d+2])
+  
+  if (!is.null(dtheta))
+  {
+    for (j in 1:dtheta)
+      Mparameters2[,d+2+j] =  1/(1+exp(-Mparameters[,d+2+j]))
+  }
+  
+  
+  return(Mparameters2)
+}
+
+
+
+# Chib MH one block method ------------------------------------------------
+
+Chibcomputations = function(parstar,parsample,V,Rexp=Rexp,tdistFULL=tdistFULL,alpha=1.9,par.prior=par.prior,calibration)
+  #parstar fixed value
+  #par sample posterior sample
+  #V used covariance matrix for proposition
+{
+  
+  nMCMC = nrow(parsample)
+  poststar = posterior(parstar,Rexp=Rexp,tdistFULL=tdistFULL,alpha=1.9,par.prior=par.prior,transfo.scale=TRUE,weight = TRUE,calibration=calibration)
+  logpriorstar = poststar[1]
+  loglikstar = poststar[2]
+  poststar =sum(poststar)
+  
+  #numerator  
+  postsample = sapply(1:nMCMC,function(i) posterior(parsample[i,],Rexp=Rexp,tdistFULL=tdistFULL,alpha=1.9,par.prior=par.prior,transfo.scale=TRUE,calibration=calibration))
+  alphasamplestar = exp(c(poststar)-postsample)
+  alphasamplestar = apply(cbind(1,alphasamplestar),1,min)
+  qsamp_star = sapply(1:nrow(parsample), function(i) dmvnorm(parstar,mean = parsample[i,],sigma = V))
+  
+  num = mean(qsamp_star*alphasamplestar)
+  
+  
+  #denominator
+  nden = 10000
+  qstar_nsamp = rmvnorm(nden,mean=parstar,sigma = V)
+  postnsamp = sapply(1:nden,function(i) posterior(qstar_nsamp[i,],Rexp=Rexp,tdistFULL=tdistFULL,alpha=1.9,par.prior=par.prior,transfo.scale=TRUE,calibration=calibration))
+  alphastarsample = exp(postnsamp-poststar)
+  alphastarsample = apply(cbind(1,alphastarsample),1,min)
+  
+  den = mean(alphastarsample)
+  
+  return(c(num,den,num/den,logpriorstar,loglikstar))
+}
+
+
+
+
+
+
+
+
+# tests -------------------------------------------------------------------
+
+
+gsobol = function(x,theta)
+{
+  # v = (abs(4*x-2) + theta) / (1+theta)
+  # if (!is.null(nrow(v)))  return(apply(v,1,prod))
+  # else return(prod(v))
+
+ return((abs(4*x[,1]-2) + theta[1]) /(1+theta[1]) + (abs(4*x[,2]-2) + theta[2]) /(1+theta[2]) + (abs(4*x[,3]-2) + theta[3]) /(1+theta[3]))
+  
+  #v = theta * x *10
+#  x%*% theta *10
+  # if (!is.null(nrow(v)))  return(apply(v,1,sum))
+  # else return(sum(v))
+  
+}
+
+
+gsobol4 = function(x,theta)
+{
+  # v = (abs(4*x-2) + theta) / (1+theta)
+  # if (!is.null(nrow(v)))  return(apply(v,1,prod))
+  # else return(prod(v))
+  
+  return((abs(4*x[,1]-2) + theta[1]) /(1+theta[1]) + (abs(4*x[,2]-2) + theta[2]) /(1+theta[2]) + (abs(4*x[,3]-2) + theta[3]) /(1+theta[3])+(abs(4*x[,4]-2) + theta[4]) /(1+theta[4]))
+  
+  #v = theta * x *10
+  #  x%*% theta *10
+  # if (!is.null(nrow(v)))  return(apply(v,1,sum))
+  # else return(sum(v))
+  
+}
+
+
+linear = function(x,theta)
+{
+  if (is.null(nrow(x))) x = matrix(x,nrow=1)
+  if (ncol(x)!=length(theta)) x=x[,1:length(theta)]
+  
+   x%*% theta *10
+}
+
+
+sinus = function(x,theta)
+{
+  if (is.null(nrow(x))) x = matrix(x,nrow=1)
+  if (ncol(x)!=length(theta)) x=x[,1:length(theta)]
+  
+  rowSums(sin(x*matrix(theta,nrow(x),ncol(x),byrow=T)))
+}
+
+
+linearSimple = function(x,theta)
+{
+  if (is.null(nrow(x))) x = matrix(x,nrow=1)
+  if (ncol(x)!=length(theta)) x=x[,1:length(theta)]
+  
+  x%*% theta 
+}
+
+linearcst = function(x,theta) #linear with cst term
+{
+  if (ncol(x)!=length(theta)-1) x=x[,1:length(theta)-1]
+  
+  # theta have to be transformed to be in [0 1]
+  theta = theta *2
+   
+  cbind(1,x)%*%theta
+}
+
+
+
+#new option 31/01/19 for introducing correlation in Xexp !
+simulation = function( sigerr = .05, sigdelta = .4, thetastar = 3:5/10,n = 50,rho = c(.5,.4,1),computermodel=gsobol,px=3,correlationX=NULL)
+{
+  # fix
+  alpha=1.9
+  
+  if (is.null(px)) px = length(rho)
+  
+  # simulation
+  Xexp = lhsDesign(n,px)$design
+  Xexp = maximinSA_LHS(Xexp)$design
+  
+  if (!is.null(correlationX))
+  {
+    lowcorr = correlationX$locorr # borneinf
+    upcorr = correlationX$upcorr #bornesup
+    nc = ncol(correlationX$var)
+    for (i in 1:nc) # array with two lines first which to sample from, second which to replace
+    {
+      cond=TRUE
+      while (cond){
+      x = Xexp[,correlationX$var[1,i]]
+      z = .1* x +rnorm(50,0,.1)
+      if (cor(z,x)>lowcorr & cor(z,x)<upcorr)
+      {
+        cond = FALSE
+        Xexp[,correlationX$var[2,i]] = (z-min(z))/(max(z)-min(z)) 
+      }
+      }
+    }
+  }
+  
+  disc = t(rmvnorm(1,mean=rep(0,n),sigma = sigdelta^2 * corfunct(rho = rho,alpha = alpha,tensordist(Xexp))))
+  Yexp = computermodel(Xexp,thetastar) + disc + rnorm(nrow(Xexp),0,sd=sigerr)
+  Rexp = Yexp - computermodel(Xexp,thetastar)
+    #Yexp = computermodel(Xexp,matrix(thetastar,nrow=nrow(Xexp),ncol=ncol(Xexp),byrow=TRUE)) + disc + rnorm(nrow(Xexp),0,sd=sigerr)
+  #Rexp = Yexp - computermodel(Xexp,matrix(thetastar,nrow=nrow(Xexp),ncol=ncol(Xexp),byrow=T))
+  
+  return(list(Xexp=Xexp,disc=disc,Yexp=Yexp,Rexp=Rexp))
+}
+
+
+### simulation 2 avec fonction et non simulee selon GP
+simulation2 = function( sigerr = .05, thetastar = 3:6/10,n = 50,computermodel=gsobol4,px=4,correlationX=NULL)
+{
+  # simulation
+  Xexp = lhsDesign(n,px)$design
+  Xexp = maximinSA_LHS(Xexp)$design
+  
+  if (!is.null(correlationX))
+  {
+    lowcorr = correlationX$locorr # borneinf
+    upcorr = correlationX$upcorr #bornesup
+    nc = ncol(correlationX$var)
+    for (i in 1:nc) # array with two lines first which to sample from, second which to replace
+    {
+      cond=TRUE
+      while (cond){
+        x = Xexp[,correlationX$var[1,i]]
+        z = .1* x +rnorm(50,0,.1)
+        if (cor(z,x)>lowcorr & cor(z,x)<upcorr)
+        {
+          cond = FALSE
+          Xexp[,correlationX$var[2,i]] = (z-min(z))/(max(z)-min(z)) 
+        }
+      }
+    }
+  }
+  
+  # functional form
+  disc = sin(Xexp[,1]*Xexp[,5]*2*pi)+Xexp[,2]^3 + (1-Xexp[,6])^3
+  Yexp = computermodel(Xexp,thetastar) + disc + rnorm(nrow(Xexp),0,sd=sigerr)
+  Rexp = Yexp - computermodel(Xexp,thetastar)
+  #Yexp = computermodel(Xexp,matrix(thetastar,nrow=nrow(Xexp),ncol=ncol(Xexp),byrow=TRUE)) + disc + rnorm(nrow(Xexp),0,sd=sigerr)
+  #Rexp = Yexp - computermodel(Xexp,matrix(thetastar,nrow=nrow(Xexp),ncol=ncol(Xexp),byrow=T))
+  
+  return(list(Xexp=Xexp,disc=disc,Yexp=Yexp,Rexp=Rexp))
+}
+
+
+
+### simulation 3 pour reproduire ex linkletter sans discrepance mais sur emulateur
+simulation3 = function( sigerr = .05, thetastar = 3:6/10,n = 50,computermodel=gsobol4,px=4)
+{
+  # simulation
+  Xexp = lhsDesign(n,px)$design
+  Xexp = maximinSA_LHS(Xexp)$design
+  
+  # functional form
+  Yexp = computermodel(Xexp,thetastar) + rnorm(nrow(Xexp),0,sd=sigerr)
+  Rexp = Yexp 
+  #Yexp = computermodel(Xexp,matrix(thetastar,nrow=nrow(Xexp),ncol=ncol(Xexp),byrow=TRUE)) + disc + rnorm(nrow(Xexp),0,sd=sigerr)
+  #Rexp = Yexp - computermodel(Xexp,matrix(thetastar,nrow=nrow(Xexp),ncol=ncol(Xexp),byrow=T))
+  
+  return(list(Xexp=Xexp,Yexp=Yexp,Rexp=Rexp))
+}
+
+
+# avec chib
+
+MargLiknPostSamp2 = function(gamma,Rexp,Xexp,nMCMC = 10000,calibration=NULL,submodel = FALSE)
+{
+  # fix
+  # if submodel = TRUE if means that an x is considered on not in the model, hard selection of model.
+  # in this case gamma is 0 or 1 meaning that an x is or not in the model for discrepancy
+  alpha=1.9
+  par.prior = list() 
+  par.prior$gamma=gamma
+  par.prior$sigerr=c(4,0.02) #invgamma
+  par.prior$sigdelta=c(3,1) #invgamma
+  tdistFULL =  tensordist(Xexp)
+  par.prior$theta = cbind(rep(0,ncol(Xexp)),rep(1,ncol(Xexp)))
+  
+  
+  
+  #browser()
+  
+  if (submodel)
+  {
+    if (sum(gamma!=0 & gamma!=1)>0) {stop("gamma must be 0/1 only")}
+    par.prior$gamma = rep(1,sum(gamma))
+    tdistFULL =  tensordist(as.matrix(Xexp[,which(gamma==1)])) # bug if only 0 in gamma...
+    gamma = rep(1,sum(gamma))
+  }
+  
+  #MH with Hessian for proposal
+  #opt.out <- optim(c(rep(0,length(gamma)),log(par.prior$sigerr[2]/(par.prior$sigerr[1]-1)),log(par.prior$sigdelta[2]/(par.prior$sigdelta[1]-1))), posterior,hessian = TRUE,Rexp=Rexp,tdistFULL=tdistFULL,alpha=1.9,par.prior=par.prior,transfo.scale=TRUE,control = list(fnscale = -1, trace = 0, REPORT =10, maxit = 500))
+  #Vprop = solve(-opt.out$hessian)
+  #init = opt.out$par
+  Vprop = diag(c(rep(.7,length(gamma)),1,1))
+  init = c(rep(0,length(gamma)),.004,.2)
+  
+
+  
+  
+  if (!is.null(calibration))
+  {
+    #opt.out <- optim(c(rep(0,length(gamma)),.002,0.2,rep(0,3)), posterior,hessian = TRUE,Rexp=Rexp,tdistFULL=tdistFULL,alpha=1.9,par.prior=par.prior,transfo.scale=TRUE,control = list(fnscale = -1, trace = 0, REPORT =10, maxit = 500),calibration=calibration)
+    #Vprop = solve(-opt.out$hessian)
+    #init = opt.out$par
+    
+    Vprop = diag(c(rep(.7,length(gamma)),1,1,rep(.6,nrow(par.prior$theta))))
+    Vprop = diag(c(rep(.3,length(gamma)),.5,.5,rep(.3,nrow(par.prior$theta))))
+    init = c(rep(0,length(gamma)),.004,.2,rep(.5,nrow(par.prior$theta)))
+  }
+    
+  #browser()
+  chaintransfo = MCMCmetrop1R(posterior,theta.init = init,burnin = 1000,mcmc = nMCMC,logfun = TRUE,Rexp=Rexp,tdistFULL=tdistFULL,alpha=1.9,par.prior=par.prior,transfo.scale=TRUE,calibration=calibration,V=Vprop)
+
+  #ML computation
+ # browser()
+  star = apply(chaintransfo,2,median)
+  ML = Chibcomputations(star,chaintransfo,Vprop,Rexp=Rexp,tdistFULL=tdistFULL,alpha=1.9,par.prior=par.prior,calibration=calibration)
+  
+  return(list(chain=chaintransfo,MLsteps=ML,MargLik=ML[4] + ML[5] -log(ML[3])))
+}
+
+
+
+
+OptimBF_EGO = function(don,res,Dgamma,calibration=NULL)
+#don data at hand
+#res results from MargLikPostSamp2
+{
+  vML = sapply( res,function(sort) try(sort$MargLik))
+  vML=as.numeric(vML)
+  kept = which(vML>0)
+  vML = vML[kept]
+  Dgamma2 = Dgamma[kept,]
+  krigconv= 1
+  
+  while (krigconv>0)
+  {
+    krig = km(formula = ~.^2,as.data.frame(Dgamma2),response = vML/vML[1])
+    krigconv=krig@control$convergence
+  }
+  
+  
+  OPTIM_MargLiknPostSamp2 = function(gamma)
+  {
+    MargLiknPostSamp2(gamma = gamma,Rexp = don$Rexp,Xexp = don$Xexp,calibration = calibration)$MargLik/vML[1]
+  }
+  
+  resEGO = EGO.nsteps(krig,OPTIM_MargLiknPostSamp2,nsteps = 5,lower = rep(1,ncol(Dgamma)),upper=rep(30,ncol(Dgamma)))
+  
+  return(resEGO)
+}
+
+
+OptimBF_EGOext = function(don,res,Dgamma,calibration=NULL,lower=1,upper=30,nsteps=10)
+{
+  
+  vML = sapply( res,function(sort) try(sort$MargLik))
+  vML=as.numeric(vML)
+  kept = which(vML>0)
+  vML = vML[kept]
+  BF=vML/vML[1]
+  Dgamma2 = Dgamma[kept,]
+  
+  vEI = numeric(nsteps)
+  
+  for (i in 1:nsteps)
+  {
+    restemp = OptimBF_EIext(don,BF,Dgamma2,calibration=calibration,lower=lower,upper=upper)
+  #browser()
+    Dgamma2 = rbind(Dgamma2,restemp$new)
+    vEI[i] = restemp$val
+    BF = c(BF,MargLiknPostSamp2(gamma = as.numeric(restemp$new),Rexp = don$Rexp,Xexp = don$Xexp,nMCMC=20000,calibration = calibration)$MargLik/vML[1])
+ # print(i)
+     }
+  
+  return(list(Dgamma=Dgamma2,BF=BF,EI=vEI))
+}
+
+OptimBF_EIext = function(don,BF,DgammaC,calibration,lower,upper)
+  #don data at hand
+  #res results from MargLikPostSamp2
+  #ext because focused on the bounds of the parameters 
+  #only 1 step
+{
+  extreme= c(1,30)
+  atester = expand.grid(extreme,extreme,extreme,extreme,extreme,extreme,extreme,extreme,extreme) # exactly 9
+  krigconv= 1
+  
+  names(atester)=names(as.data.frame(DgammaC))
+  while (krigconv>0)
+  {
+    krig = km(formula = ~.^2,as.data.frame(DgammaC),response = BF,control = list(trace = FALSE))
+    krigconv=krig@control$convergence
+  }
+  resEI = apply(atester,1,EI,model=krig,minimization=FALSE)
+  
+  k=which.max(resEI)
+  return(list(new=atester[k,],val=resEI[k]))
+}
+
+
+
+
+
+MargLiknPostSamp = function(gamma,Rexp,Xexp,nMCMC = 10000)
+{
+  # fix
+  alpha=1.9
+  par.prior = list() 
+  par.prior$gamma=gamma
+  par.prior$sigerr=c(.01,.1)
+  par.prior$sigdelta=c(.4,.2)
+  
+  tdistFULL =  tensordist(Xexp)
+  
+  chaintransfo = MCMCmetrop1R(posterior,theta.init = c(rep(0,3),log(0.1),log(0.2)),burnin = 1000,mcmc = nMCMC,logfun = TRUE,Rexp=Rexp,tdistFULL=tdistFULL,alpha=1.9,par.prior=par.prior,transfo.scale=TRUE,force.samp = T)
+  weights = sapply(1:nMCMC,function(i) exp(posterior(chaintransfo[i,],Rexp=Rexp,tdistFULL=tdistFULL,alpha=1.9,par.prior=par.prior,transfo.scale=TRUE,weight = TRUE)))
+  ML = nMCMC / (sum(1/weights[2,]))
+  
+  return(list(chain=chaintransfo,priorNlik=weights,MargLik=ML))
+  
+}
+
+
+
+# fonction pour ajouter une variable inerte a un plan d'exp afin de mimer la methode linkletter
+designLink = function(X)
+{
+   d = ncol(X)
+   n = nrow(X)
+   indices = sample(1:d,n,replace=T)
+   inertvar = X[cbind(1:n,indices)] 
+   Xnew = cbind(X,inertvar) 
+}
+
+
+# fonction pour tirer un design avec correlations
+
+
+# Bayes factor through bridge sampling
+BFbridge = function(ech,gamma,gammaref=rep(1,length(gamma)))
+{
+  n = nrow(ech)
+  d = length(gamma)
+ # gamma= as.numeric(gamma)
+  rap = numeric(n)
+  for (i in 1:n)
+  {
+    rap[i] = exp(sum(dbeta(expit2(ech[i,1:d]),gamma,1,log = T)) - sum(dbeta(expit2(ech[i,1:d]),gammaref,1,log = T)) )
+  }
+  return(mean(rap))
+}
+
+
+
+
+#### Anabel's Scenarii 
+reality <- function(N=100, beta=rep(1,6), sd=.05, non.linear=rep(1,5),depnonlin=FALSE)
+  {
+  # sample size
+  
+  #x1 
+  #set.seed(seed)
+  
+  x1 <- rgamma(N,2,1)
+  x2 <- rnorm(N,1.70,0.15)
+  x3 <- rgamma(N,1,0.6)
+  #x4 <- rbinom(N,3,0.2)
+  x4 = rnorm(N,2.2,.5)
+  if (depnonlin)
+    x5 <-  sin(2*x3+rnorm(N,sd=.1))  
+  else
+     x5 <-  x3 + rnorm(N)
+  
+  
+  p <- non.linear
+  
+  covargal = cbind(1,x1^p[1],x2^p[2],x3^p[3],x4^p[4],x5^p[5])
+  covarmod <- cbind(x1,x2,x3,x4,x5)
+  
+  
+  #if(length(beta)!=6){stop("Incorrect number of parameters")}
+  mu <- covargal%*%beta
+  
+  y <- mu + rnorm(N,0,sd)
+  
+  # vrai modele : 1 + 1* x_1 + 1 * x_2 + 1* x_3
+  
+  mod = linearcst(covarmod, c(1,1,1,1)/2) #transformation des beta pour etre dans [0,1] unif prior on[0,1]
+  
+  
+  xnorm = (covarmod - matrix(apply(covarmod,2,min),nrow=nrow(covarmod),ncol=ncol(covarmod),byrow=T))/matrix(apply(covarmod,2,max)-apply(covarmod,2,min),nrow=nrow(covarmod),ncol=ncol(covarmod),byrow=T)
+  
+  
+  data <- list(Yexp=y,Xexpnorm = xnorm,Xexp = covarmod , Rexp = y-mod)
+  # utiliser Xexpnorm pour calculer tdistFULL
+  # utiliser Xexp pour calibration
+  return(data)
+}
+
+# theta mod = 4
+# data <- reality(N=100, beta=c(1,1,1,1,0,0),sd=0.05,non.linear = c(1,2,1,1,1))
+# plot(data$Yexp~data$Xexp[,2])
+# plot(data$Rexp~data$Xexp[,2])
+# data$Yexp-linearcst(data$Xexp,c(1,1,1,1)/2)  == data$Rexp
+#sd(data$Rexp)
+
+# with sobol function
+realitysobol <- function(N=100, beta=rep(1,5),theta, sd=.05, non.linear=rep(1,5),depnonlin=FALSE)
+{
+  # sample size
+  
+  #x1 
+  #set.seed(seed)
+  
+  x1 <- runif(N,0,1)
+  x2 <- runif(N,0,1)
+  x3 <- runif(N,0,1)
+  #x4 <- rbinom(N,3,0.2)
+  x4 = runif(N,0,1)
+  if (depnonlin)
+    x5 <-  sin(2*x3+rnorm(N,sd=.1))  
+  else
+    x5 <-  x3 + rnorm(N,sd=.2)
+  
+  
+  p <- non.linear
+  
+  
+  covargal = cbind(x1^p[1],x2^p[2],x3^p[3],x4^p[4],x5^p[5])
+   
+  x = cbind(x1,x2,x3,x4,x5)
+  covarmod <- cbind(x1,x2,x3)
+  
+  
+  #if(length(beta)!=6){stop("Incorrect number of parameters")}
+  mu <- gsobol4real(covargal,theta,beta)
+  
+  y <- mu + rnorm(N,0,sd)
+  
+  # vrai modele : 1 + 1* x_1 + 1 * x_2 + 1* x_3
+  
+  mod = gsobol3(x, theta[1:3]) #transformation des beta pour etre dans [0,1] unif prior on[0,1]
+  
+  
+  xnorm = (x - matrix(apply(x,2,min),nrow=nrow(x),ncol=ncol(x),byrow=T))/matrix(apply(x,2,max)-apply(x,2,min),nrow=nrow(x),ncol=ncol(x),byrow=T)
+  
+  
+  data <- list(Yexp=y,Xexpnorm = xnorm,Xexp = x , Rexp = y-mod)
+  # utiliser Xexpnorm pour calculer tdistFULL
+  # utiliser Xexp pour calibration
+  return(data)
+}
+
+#utilise que pour simu
+gsobol4real = function(x,theta,beta)
+{
+  # v = (abs(4*x-2) + theta) / (1+theta)
+  # if (!is.null(nrow(v)))  return(apply(v,1,prod))
+  # else return(prod(v))
+  
+  v=matrix(NA,nrow(x),length(beta))
+  for (i in 1:length(beta))
+    v[,i] = (abs(4*x[,i]-2) + theta[i]) /(1+theta[i])
+  
+  
+  return(apply(v[,beta==1],1,sum))
+  
+  #v = theta * x *10
+  #  x%*% theta *10
+  # if (!is.null(nrow(v)))  return(apply(v,1,sum))
+  # else return(sum(v))
+  
+}
+
+# test=realitysobol(N=100, beta=c(1,1,0,0,0),4:8/10, sd=.0, non.linear=c(2,1,1,1,1),depnonlin=FALSE)
+# plot(test$Yexp~test$Xexp[,4])
+# plot(test$Rexp~test$Xexp[,3])
+# 
+gsobol3 = function(x,theta)
+{
+  # v = (abs(4*x-2) + theta) / (1+theta)
+  # if (!is.null(nrow(v)))  return(apply(v,1,prod))
+  # else return(prod(v))
+  x=x[,1:3]
+  return((abs(4*x[,1]-2) + theta[1]) /(1+theta[1]) + (abs(4*x[,2]-2) + theta[2]) /(1+theta[2]) + (abs(4*x[,3]-2) + theta[3]) /(1+theta[3]))
+  
+  #v = theta * x *10
+  #  x%*% theta *10
+  # if (!is.null(nrow(v)))  return(apply(v,1,sum))
+  # else return(sum(v))
+  
+}

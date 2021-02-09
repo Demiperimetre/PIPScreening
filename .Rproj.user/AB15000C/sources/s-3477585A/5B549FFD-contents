@@ -1,0 +1,129 @@
+
+rm(list=ls())
+
+load(" scenario1.RData")
+load("scenario2.RData")
+load("scenario3.RData")
+load("scenario4.RData")
+load("scenario4bis.RData")
+
+load("scenarioc12.RData")
+load("scenarioc12vmax.RData")
+load("scenarioc13.RData")
+load("scenarioc13vmax.RData")
+load("scenarioc14vmax.RData")
+load("scenarioc14.RData")
+
+
+load(" scenario1sobol.RData")
+load("scenario2sobol.RData")
+load("scenariosobol3.RData")
+load("scenariosobol4.RData")
+load("scenario4sobol.RData")
+
+
+
+load("scenarioc12sobol.RData")
+load("scenarioc13sobol.RData")
+load("scenarioc14sobol.RData")
+
+
+
+valmax = 2
+GAMMA = expand.grid(c(1,valmax),c(1,valmax),c(1,valmax),c(1,valmax),c(1,valmax))
+
+nsim = length(REStout)
+
+
+IndicVar = matrix(NA,nrow = 5, ncol = 2^5)
+
+
+for (i in 1:5)
+{
+  IndicVar[i,] = (GAMMA[,i]==1)*1
+}
+
+# non cal
+#dim(REStout[[1]]$BFcal)
+a= sapply(REStout,function(res) res$BFnoncal[2,]) # ou 3 en fonction des simus  
+
+dim(IndicVar)
+dim(a)
+
+prob = IndicVar %*% a / matrix(colSums(a),nrow=5,ncol=100,byrow = T)
+summary(as.data.frame(t(prob)))
+
+# cal
+a= sapply(REStout,function(res) res$BFcal[2,])  # ou 3 en fct des simus
+
+dim(IndicVar)
+dim(a)
+
+probcal = IndicVar %*% a / matrix(colSums(a),nrow=5,ncol=100,byrow = T)
+summary(as.data.frame(t(probcal)))
+
+boxplot(t(probcal))
+
+library(ggplot2)
+library(reshape2)
+df = data.frame(t(probcal))
+meltData <- melt(df)
+names(meltData)=c("input","prob")
+p <- ggplot(meltData, aes(input,prob)) 
+pdf("scenario14cal.pdf")
+p + geom_boxplot() +theme_bw()+ylab("prob of activeness")
+dev.off()
+
+
+df = data.frame(t(prob))
+meltData <- melt(df)
+names(meltData)=c("input","prob")
+p <- ggplot(meltData, aes(input,prob)) 
+pdf("scenario14.pdf")
+p + geom_boxplot() +theme_bw()+ylab("prob of activeness")
+dev.off()
+
+
+
+dim(REStout[[1]]$mcmccal$MH$chain)
+REStout[[1]]$mcmccal$MH$AccepRate
+
+
+hist(1/(1+exp(-REStout[[3]]$mcmccal$MH$chain[,8])))
+
+
+#scenario 2 parameter x2 est dans le modele mais pas dans la realite
+hist(1/(1+exp(-REStout[[3]]$mcmcnoncal$MH$chain[,2])))
+hist(1/(1+exp(-REStout[[3]]$mcmccal$MH$chain[,2])))
+hist(1/(1+exp(-REStout[[3]]$mcmccal$MH$chain[,10])))# ou 9 si sobol
+
+# scenario 4 on annule avec lineare la variable 3 
+hist(1/(1+exp(-REStout[[3]]$mcmcnoncal$MH$chain[,3])))
+hist(1/(1+exp(-REStout[[3]]$mcmcnoncal$MH$chain[,5])))
+hist(1/(1+exp(-REStout[[3]]$mcmccal$MH$chain[,3])))
+hist(1/(1+exp(-REStout[[3]]$mcmccal$MH$chain[,5])))
+hist(1/(1+exp(-REStout[[3]]$mcmccal$MH$chain[,11])))
+
+
+# scenario 3
+hist(1/(1+exp(-REStout[[3]]$mcmcnoncal$MH$chain[,4])))
+hist(1/(1+exp(-REStout[[3]]$mcmccal$MH$chain[,4])))
+
+
+
+hist(1/(1+exp(-REStout[[3]]$mcmccal$MH$chain[,11])))
+hist(1/(1+exp(-REStout[[3]]$mcmccal$MH$chain[,10])))
+hist(1/(1+exp(-REStout[[3]]$mcmccal$MH$chain[,10])))
+
+
+hist(1/(1+exp(-REStout[[3]]$mcmcnoncal$MH$chain[,2])))
+hist(exp(REStout[[3]]$mcmccal$MH$chain[,8]))
+
+plot(exp(REStout[[8]]$mcmccal$MH$chain[,8]))
+summary(exp(REStout[[3]]$mcmccal$MH$chain[,8]))
+
+
+
+sim = REStout[[9]]$sim
+plot(sim$Rexp~sim$Xexp[,3])
+

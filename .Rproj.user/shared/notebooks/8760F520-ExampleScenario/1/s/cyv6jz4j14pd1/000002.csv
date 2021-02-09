@@ -1,0 +1,5 @@
+"0","x <- cbind(x1,x2,x3,x4,x5)"
+"0","covarmod <- cbind(x1,x2,x3) # model covariates"
+"0","mod <- sim3(x, theta[1:3]) # output of computer model"
+"0","xnorm <- (x - matrix(apply(x,2,min),nrow=nrow(x),ncol=ncol(x),byrow=T))/matrix(apply(x,2,max)-apply(x,2,min),nrow=nrow(x),ncol=ncol(x),byrow=T) # normalization"
+"0","Yexp <- y; Xexpnorm <- xnorm; Xexp <- x;  Rexp <- (y-mod) "

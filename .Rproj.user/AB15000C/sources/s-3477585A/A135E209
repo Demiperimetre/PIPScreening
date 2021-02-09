@@ -1,0 +1,24 @@
+{
+    "id": "A135E209",
+    "path": "~/Documents/depotgit/PIPScreening package/PIPScreening/R/PIPScreening-package.R",
+    "project_path": "R/PIPScreening-package.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1588621343109.0,
+    "source_on_save": false,
+    "relative_order": 11,
+    "properties": {
+        "cursorPosition": "8,0",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1588621377,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1588621377248,
+    "read_only": false,
+    "read_only_alternatives": []
+}

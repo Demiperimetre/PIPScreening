@@ -1,0 +1,9 @@
+library(sbm)
+devtools::install_github("GrossSBM/sbm",ref="multipartite",force = TRUE)
+library(sbm)
+
+
+
+
+?estimateMultipartiteSBM
+?estimateBipartiteSBM
