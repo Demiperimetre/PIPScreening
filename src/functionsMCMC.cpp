@@ -86,11 +86,13 @@ arma::mat corfunctcpp(arma::vec rho,double alpha,Rcpp::List tensD)
 double priorrho(arma::vec gamma, arma::vec rho)
 {
   double res=1;
+  double logitrho;
   int dx = rho.n_elem;
 
   for (int i;i<dx;i++)
   {
-    res*= R::dbeta(rho(i),gamma(i),1,false);
+    logitrho = log(rho(i)/(1-rho(i)));
+    res*= R::dbeta(rho(i),gamma(i),1,false) * exp(-logitrho)/((1+exp(-logitrho))*(1+exp(-logitrho)));
   }
   return res;
 }
@@ -138,9 +140,9 @@ arma::vec logposteriorcpp(arma::vec parameters,arma::vec Rexp,Rcpp::List tdensD,
   double sigmadelta = exp(parameters(drho+1));
 
 
-  // log prior of inverse gamma
-  double logpriorsigerr = R::dgamma(1/sigmaerr,parprior(drho,0) ,1/parprior(drho,1),true) - log(pow(sigmaerr,2));// calcul inv gamma a partir gamma
-  double logpriorsigdelta = R::dgamma(1/sigmadelta,parprior(drho+1,0) ,1/parprior(drho+1,1),true) - log(pow(sigmadelta,2));
+  // log prior of inverse gamma  // attention a la jacobienne double changement de variable en 1/ et en log
+  double logpriorsigerr = R::dgamma(1/sigmaerr,parprior(drho,0) ,1/parprior(drho,1),true) - log(sigmaerr);  //log(pow(sigmaerr,2));// calcul inv gamma a partir gamma
+  double logpriorsigdelta = R::dgamma(1/sigmadelta,parprior(drho+1,0) ,1/parprior(drho+1,1),true) - log(sigmadelta) ;//log(pow(sigmadelta,2));
 
   //log prior of rho
   double logpriorrho = log(priorrho(parprior(span(0,drho-1),0),rho));
@@ -153,18 +155,28 @@ arma::vec logposteriorcpp(arma::vec parameters,arma::vec Rexp,Rcpp::List tdensD,
 
   // check if cal, if theta are out of bounds
   bool caloutbounds=false;
+  double logpriortheta=0;
   if (dpar>drho+2)
   {
     int dtheta = dpar-drho-2;
     if (any(parameters(span(dpar-dtheta,dpar-1))<-15) or any(parameters(span(dpar-dtheta,dpar-1))>15))
     {caloutbounds=true;}
+    arma::vec theta(dtheta);
+    theta = expit(parameters(span(dpar-dtheta,dpar-1)));
+    // computation of prior on theta due to the transformed space
+    arma::vec priortheta(dtheta);
+    priortheta.ones();
+    logpriortheta = log(priorrho(priortheta,theta));
+    //Rcpp::Rcout << "res is now "  << logpriortheta << std::endl;
   }
 
   //  Rcpp::Rcout << "res is now "  << rho << std::endl;
   if (any(rhobrut>15) or any(rhobrut< -15) or caloutbounds) {retour(0) = - std::numeric_limits<double>::infinity();
     //  Rcpp::Rcout << "res is now "  << rho << std::endl;
   }
-  else {retour(0)=logpriorsigerr+logpriorsigdelta+logpriorrho;}
+  else {
+    retour(0)=logpriorsigerr+logpriorsigdelta+logpriorrho+logpriortheta;
+    }
   retour(1)=loglik;
   //double retour=logpriorsigerr+logpriorsigdelta+logpriorrho+loglik;
   return retour;

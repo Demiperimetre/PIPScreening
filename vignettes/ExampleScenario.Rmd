@@ -112,5 +112,11 @@ computeProbActive(resmcmccal$MH$chain[,1:pgamma])
 ```
 
 
+```{r}
+resmcmccal$MH$AccepRate
+hist(1/(1+exp(-resmcmccal$MH$chain[,8])))
+hist(1/(1+exp(-resmcmccal$MH$chain[,9])))
+hist(1/(1+exp(-resmcmccal$MH$chain[,10])))
+```
 
 
