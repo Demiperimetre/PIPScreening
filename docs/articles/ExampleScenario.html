@@ -56,6 +56,12 @@
 <li>
       <a href="../articles/ExampleScenario.html">ExampleScenario</a>
     </li>
+    <li>
+      <a href="../articles/ExampleScenario2.html">ExampleScenario2</a>
+    </li>
+    <li>
+      <a href="../articles/ExampleScenarioCalwithRep.html">Integrated approach vs. two-step approaches</a>
+    </li>
   </ul>
 </li>
       </ul>
@@ -149,9 +155,20 @@
 <p>First computed from the posterior sampling without calibration and then computed from the posterior sampling which deals with calibration. We obtain then two vectors of probabilities which give for each variable the probability that a variable is active in the discrepancy. Here we expect that the fist variable (because of the power 2 in the physical system) and the second variable (because of the mismatch between the physical system and the computer model) to be active.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/computeProbActive.html">computeProbActive</a></span><span class="op">(</span><span class="va">resmcmc</span><span class="op">$</span><span class="va">MH</span><span class="op">$</span><span class="va">chain</span><span class="op">[</span>,<span class="fl">1</span><span class="op">:</span><span class="va">pgamma</span><span class="op">]</span><span class="op">)</span>
-<span class="co">#&gt; [1] 0.96345552 0.83906356 0.01024847 0.01011747 0.01013312</span>
+<span class="co">#&gt; [1] 1.00000000 0.99999961 0.01459635 0.01206288 0.01590240</span>
 <span class="fu"><a href="../reference/computeProbActive.html">computeProbActive</a></span><span class="op">(</span><span class="va">resmcmccal</span><span class="op">$</span><span class="va">MH</span><span class="op">$</span><span class="va">chain</span><span class="op">[</span>,<span class="fl">1</span><span class="op">:</span><span class="va">pgamma</span><span class="op">]</span><span class="op">)</span>
-<span class="co">#&gt; [1] 0.99999326 0.99871578 0.01026230 0.01001150 0.01024475</span></code></pre></div>
+<span class="co">#&gt; [1] 1.00000000 0.99999610 0.01302021 0.01179403 0.01574140</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">resmcmccal</span><span class="op">$</span><span class="va">MH</span><span class="op">$</span><span class="va">AccepRate</span>
+<span class="co">#&gt; [1] 0.252</span>
+<span class="fu"><a href="https://rdrr.io/r/graphics/hist.html">hist</a></span><span class="op">(</span><span class="fl">1</span><span class="op">/</span><span class="op">(</span><span class="fl">1</span><span class="op">+</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="op">-</span><span class="va">resmcmccal</span><span class="op">$</span><span class="va">MH</span><span class="op">$</span><span class="va">chain</span><span class="op">[</span>,<span class="fl">8</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<p><img src="ExampleScenario_files/figure-html/unnamed-chunk-2-1.png" width="700"></p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/hist.html">hist</a></span><span class="op">(</span><span class="fl">1</span><span class="op">/</span><span class="op">(</span><span class="fl">1</span><span class="op">+</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="op">-</span><span class="va">resmcmccal</span><span class="op">$</span><span class="va">MH</span><span class="op">$</span><span class="va">chain</span><span class="op">[</span>,<span class="fl">9</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<p><img src="ExampleScenario_files/figure-html/unnamed-chunk-2-2.png" width="700"></p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/hist.html">hist</a></span><span class="op">(</span><span class="fl">1</span><span class="op">/</span><span class="op">(</span><span class="fl">1</span><span class="op">+</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html">exp</a></span><span class="op">(</span><span class="op">-</span><span class="va">resmcmccal</span><span class="op">$</span><span class="va">MH</span><span class="op">$</span><span class="va">chain</span><span class="op">[</span>,<span class="fl">10</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<p><img src="ExampleScenario_files/figure-html/unnamed-chunk-2-3.png" width="700"></p>
 </div>
   </div>
 
