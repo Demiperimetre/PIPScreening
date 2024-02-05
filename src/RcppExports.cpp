@@ -6,6 +6,27 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
+// loglikcpp
+double loglikcpp(arma::vec rho, double sigerr, double sigdelta, arma::mat Rexp, Rcpp::List tensD, double alpha);
+RcppExport SEXP _PIPScreening_loglikcpp(SEXP rhoSEXP, SEXP sigerrSEXP, SEXP sigdeltaSEXP, SEXP RexpSEXP, SEXP tensDSEXP, SEXP alphaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type rho(rhoSEXP);
+    Rcpp::traits::input_parameter< double >::type sigerr(sigerrSEXP);
+    Rcpp::traits::input_parameter< double >::type sigdelta(sigdeltaSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type Rexp(RexpSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type tensD(tensDSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    rcpp_result_gen = Rcpp::wrap(loglikcpp(rho, sigerr, sigdelta, Rexp, tensD, alpha));
+    return rcpp_result_gen;
+END_RCPP
+}
 // MetropoliswGibbs
 Rcpp::List MetropoliswGibbs(int niter, arma::vec parwalk, arma::vec parinit, arma::vec Rexp, Rcpp::List tdensD, double alpha, arma::mat parprior, bool adaptive, Rcpp::List calibration);
 RcppExport SEXP _PIPScreening_MetropoliswGibbs(SEXP niterSEXP, SEXP parwalkSEXP, SEXP parinitSEXP, SEXP RexpSEXP, SEXP tdensDSEXP, SEXP alphaSEXP, SEXP parpriorSEXP, SEXP adaptiveSEXP, SEXP calibrationSEXP) {
@@ -66,6 +87,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_PIPScreening_loglikcpp", (DL_FUNC) &_PIPScreening_loglikcpp, 6},
     {"_PIPScreening_MetropoliswGibbs", (DL_FUNC) &_PIPScreening_MetropoliswGibbs, 9},
     {"_PIPScreening_Metropolis", (DL_FUNC) &_PIPScreening_Metropolis, 9},
     {"_PIPScreening_MCMC", (DL_FUNC) &_PIPScreening_MCMC, 10},

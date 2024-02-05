@@ -89,7 +89,7 @@ double priorrho(arma::vec gamma, arma::vec rho)
   double logitrho;
   int dx = rho.n_elem;
 
-  for (int i;i<dx;i++)
+  for (int i=0;i<dx;i++)
   {
     logitrho = log(rho(i)/(1-rho(i)));
     res*= R::dbeta(rho(i),gamma(i),1,false) * exp(-logitrho)/((1+exp(-logitrho))*(1+exp(-logitrho)));
@@ -99,6 +99,8 @@ double priorrho(arma::vec gamma, arma::vec rho)
 
 
 // prior dbeta
+//' @export
+// [[Rcpp::export]]
 double loglikcpp(arma::vec rho,double sigerr, double sigdelta,arma::mat Rexp,Rcpp::List tensD,double alpha)
 {
   int n = Rexp.n_rows;
@@ -124,7 +126,7 @@ double loglikcpp(arma::vec rho,double sigerr, double sigdelta,arma::mat Rexp,Rcp
 // on donne la longueur de rho afin d'eviter les probleme si on est en calibration et que les priors ne sont pas unif(0,1) pour theta
 arma::vec logposteriorcpp(arma::vec parameters,arma::vec Rexp,Rcpp::List tdensD,double alpha,arma::mat parprior,int drho)
 {
-  int n = Rexp.n_elem;
+  //int n = Rexp.n_elem;
   //Rcpp::Rcout << "res is now "  << n << std::endl;
   int dpar = parameters.n_elem;// = drho + 2 (var) + nb theta
 
@@ -338,7 +340,7 @@ Rcpp::List Metropolis(int niter,arma::mat covwalk,arma::vec parinit,arma::vec Re
   int iteradap = 300;
   int maxadap = 2000;
 
-  int n = Rexp.n_elem;
+  //int n = Rexp.n_elem;
 
   arma::mat chain(niter,dpar);
   arma::vec vlogpost(niter); // stocker le calcul de la log vraisemblance
